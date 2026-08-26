@@ -20,10 +20,10 @@ def prob_diff_new(model, sentence, logits: torch.Tensor, loss=False, mean=False)
     Returns:
         Sum of positive probabilities (L2 metric)
     """
-    Positive_Probs = 0
-    Negative_Probs = 0  # Not used in L2, but kept for consistency
-    k = 10
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    Positive_Probs = torch.tensor(0.0, device=device)
+    Negative_Probs = torch.tensor(0.0, device=device)
+    k = 10
     
     probs = torch.softmax(logits[:, -1], dim=-1)
     probs, next_tokens = torch.topk(probs[-1], k)

@@ -15,10 +15,10 @@ def prob_diff(model, sentence, logits: torch.Tensor, loss=False, mean=False):
     Returns:
         Difference between positive and negative probabilities
     """
-    Positive_Probs = 0
-    Negative_Probs = 0
-    k = 10
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    Positive_Probs = torch.tensor(0.0, device=device)
+    Negative_Probs = torch.tensor(0.0, device=device)
+    k = 10
     
     probs = torch.softmax(logits[:, -1], dim=-1)
     probs, next_tokens = torch.topk(probs[-1], k)
