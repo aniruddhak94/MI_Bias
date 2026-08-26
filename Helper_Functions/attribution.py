@@ -95,26 +95,34 @@ def get_scores(model: HookedTransformer, graph: Graph, dataset, metric: Callable
 
     total_items = 0
     for sentence, corrupted in tqdm(dataset):
-        sens = [sentence, corrupted]
-        sens = [str(s) for s in sens]
-        max_length = max(len(model.tokenizer.tokenize(s)) for s in sens)
-        padded_sentences = [model.tokenizer.encode(s, padding='max_length', max_length=max_length, return_tensors='pt', add_special_tokens=True) for s in sens]
-        s1 = padded_sentences[0]
-        s2 = padded_sentences[1]
-        clean = model.tokenizer.decode(s1[0])
-        corrupted_dash = model.tokenizer.decode(s2[0])
+        # Extract actual strings from list format
+        clean_str = sentence[0] if isinstance(sentence, list) else sentence
+        corrupted_str = corrupted[0] if isinstance(corrupted, list) else corrupted
 
-        batch_size = len(clean)
+        # Tokenize both to find max length for padding
+        clean_tokens = model.tokenizer.encode(clean_str, add_special_tokens=True)
+        corrupted_tokens = model.tokenizer.encode(corrupted_str, add_special_tokens=True)
+        max_length = max(len(clean_tokens), len(corrupted_tokens))
+
+        # Decode back to padded strings so both have the same token count
+        clean_padded = model.tokenizer.decode(
+            model.tokenizer.encode(clean_str, padding='max_length', max_length=max_length, add_special_tokens=True)
+        )
+        corrupted_padded = model.tokenizer.decode(
+            model.tokenizer.encode(corrupted_str, padding='max_length', max_length=max_length, add_special_tokens=True)
+        )
+
+        batch_size = 1
         total_items += batch_size
-        n_pos, input_lengths = get_npos_input_lengths(model, clean)
+        n_pos, input_lengths = get_npos_input_lengths(model, clean_padded)
 
         (fwd_hooks_corrupted, fwd_hooks_clean, bwd_hooks), activation_difference = make_hooks_and_matrices(model, graph, batch_size, n_pos, scores)
 
         with model.hooks(fwd_hooks=fwd_hooks_corrupted):
-            corrupted_logits = model(corrupted_dash)
+            corrupted_logits = model(corrupted_padded)
 
         with model.hooks(fwd_hooks=fwd_hooks_clean, bwd_hooks=bwd_hooks):
-            logits = model(clean)
+            logits = model(clean_padded)
             metric_value = metric(sentence, logits)
             metric_value.backward()
 
@@ -127,29 +135,37 @@ def get_scores_ig(model: HookedTransformer, graph: Graph, dataset, metric: Calla
 
     total_items = 0
     for sentence, corrupted in tqdm(dataset):
-        sens = [sentence, corrupted]
-        sens = [str(s) for s in sens]
-        max_length = max(len(model.tokenizer.tokenize(s)) for s in sens)
-        padded_sentences = [model.tokenizer.encode(s, padding='max_length', max_length=max_length, return_tensors='pt', add_special_tokens=True) for s in sens]
-        s1 = padded_sentences[0]
-        s2 = padded_sentences[1]
-        clean = model.tokenizer.decode(s1[0])
-        corrupted_dash = model.tokenizer.decode(s2[0])
+        # Extract actual strings from list format
+        clean_str = sentence[0] if isinstance(sentence, list) else sentence
+        corrupted_str = corrupted[0] if isinstance(corrupted, list) else corrupted
 
-        batch_size = len(clean)
+        # Tokenize both to find max length for padding
+        clean_tokens = model.tokenizer.encode(clean_str, add_special_tokens=True)
+        corrupted_tokens = model.tokenizer.encode(corrupted_str, add_special_tokens=True)
+        max_length = max(len(clean_tokens), len(corrupted_tokens))
+
+        # Decode back to padded strings so both have the same token count
+        clean_padded = model.tokenizer.decode(
+            model.tokenizer.encode(clean_str, padding='max_length', max_length=max_length, add_special_tokens=True)
+        )
+        corrupted_padded = model.tokenizer.decode(
+            model.tokenizer.encode(corrupted_str, padding='max_length', max_length=max_length, add_special_tokens=True)
+        )
+
+        batch_size = 1
         total_items += batch_size
-        n_pos, input_lengths = get_npos_input_lengths(model, clean)
+        n_pos, input_lengths = get_npos_input_lengths(model, clean_padded)
 
         (fwd_hooks_corrupted, fwd_hooks_clean, bwd_hooks), activation_difference = make_hooks_and_matrices(model, graph, batch_size, n_pos, scores)
 
         with torch.inference_mode():
             with model.hooks(fwd_hooks=fwd_hooks_corrupted):
-                _ = model(corrupted_dash)
+                _ = model(corrupted_padded)
 
             input_activations_corrupted = activation_difference[:, :, graph.forward_index(graph.nodes['input'])].clone()
 
             with model.hooks(fwd_hooks=fwd_hooks_clean):
-                clean_logits = model(clean)
+                clean_logits = model(clean_padded)
 
             input_activations_clean = input_activations_corrupted - activation_difference[:, :, graph.forward_index(graph.nodes['input'])]
 
@@ -164,7 +180,7 @@ def get_scores_ig(model: HookedTransformer, graph: Graph, dataset, metric: Calla
         for step in range(1, steps+1):
             total_steps += 1
             with model.hooks(fwd_hooks=[(graph.nodes['input'].out_hook, input_interpolation_hook(step))], bwd_hooks=bwd_hooks):
-                logits = model(clean)
+                logits = model(clean_padded)
                 metric_value = metric(sentence, logits)
                 metric_value.backward()
 
