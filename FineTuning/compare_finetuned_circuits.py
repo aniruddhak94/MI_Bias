@@ -28,7 +28,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from functools import partial
-from huggingface_hub import HfFolder
+from huggingface_hub import login as hf_login
 from transformers import AutoTokenizer
 from transformer_lens import HookedTransformer
 
@@ -152,7 +152,7 @@ def main():
     args = parser.parse_args()
 
     if args.HF_token:
-        HfFolder.save_token(args.HF_token)
+        hf_login(token=args.HF_token)
 
     os.makedirs(args.output_dir, exist_ok=True)
 

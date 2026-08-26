@@ -28,7 +28,7 @@ from transformers import (
     DataCollatorForLanguageModeling
 )
 from datasets import Dataset
-from huggingface_hub import HfFolder
+from huggingface_hub import login as hf_login
 
 # Add project root to path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -167,7 +167,7 @@ def fine_tune_model(model_name, finetune_type, output_dir, bias_type='demographi
         hf_token: Hugging Face token
     """
     if hf_token:
-        HfFolder.save_token(hf_token)
+        hf_login(token=hf_token)
     
     print(f"Loading base model: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)

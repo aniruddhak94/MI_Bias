@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from typing import List, Tuple
-from huggingface_hub import HfFolder
+from huggingface_hub import login as hf_login
 from transformers import AutoTokenizer
 from transformer_lens import HookedTransformer
 
@@ -306,7 +306,7 @@ def main():
 
     # Setup Hugging Face token if provided
     if args.HF_token:
-        HfFolder.save_token(args.HF_token)
+        hf_login(token=args.HF_token)
 
     # Load model
     print(f"Loading model: {args.model_name}")
