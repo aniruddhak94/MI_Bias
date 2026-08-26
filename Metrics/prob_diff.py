@@ -16,8 +16,9 @@ def prob_diff(model, sentence, logits: torch.Tensor, loss=False, mean=False):
         Difference between positive and negative probabilities
     """
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    Positive_Probs = torch.tensor(0.0, device=device)
-    Negative_Probs = torch.tensor(0.0, device=device)
+    # Initialize with 0.0 but keep it connected to the computational graph
+    Positive_Probs = (logits.sum() * 0.0)
+    Negative_Probs = (logits.sum() * 0.0)
     k = 10
     
     probs = torch.softmax(logits[:, -1], dim=-1)
@@ -28,9 +29,9 @@ def prob_diff(model, sentence, logits: torch.Tensor, loss=False, mean=False):
         predicted = sentence[0] + " " + token  # Append the predicted token to the current text
         Senti_Scores = text_to_sentiment(predicted, device=device)
         if Senti_Scores >= 0:
-          Positive_Probs += prob.sum()
+          Positive_Probs = Positive_Probs + prob.sum()
         else:
-          Negative_Probs += prob.sum()
+          Negative_Probs = Negative_Probs + prob.sum()
 
     results.append(Positive_Probs - Negative_Probs)
     results = torch.stack(results)
