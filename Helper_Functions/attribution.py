@@ -108,10 +108,14 @@ def get_scores(model: HookedTransformer, graph: Graph, dataset, metric: Callable
         corrupted_ids = model.tokenizer.encode(corrupted_str)
         max_len = max(len(clean_ids), len(corrupted_ids))
 
+        bos_id = model.tokenizer.bos_token_id
+        if bos_id is None:
+            bos_id = model.tokenizer.eos_token_id
+
         # Pad shorter sequence with pad_token_id
         pad_id = model.tokenizer.pad_token_id
-        clean_ids_padded = clean_ids + [pad_id] * (max_len - len(clean_ids))
-        corrupted_ids_padded = corrupted_ids + [pad_id] * (max_len - len(corrupted_ids))
+        clean_ids_padded = [bos_id] + clean_ids + [pad_id] * (max_len - len(clean_ids))
+        corrupted_ids_padded = [bos_id] + corrupted_ids + [pad_id] * (max_len - len(corrupted_ids))
 
         # Convert to tensors
         clean_tokens = torch.tensor([clean_ids_padded], device=device)
@@ -154,10 +158,14 @@ def get_scores_ig(model: HookedTransformer, graph: Graph, dataset, metric: Calla
         corrupted_ids = model.tokenizer.encode(corrupted_str)
         max_len = max(len(clean_ids), len(corrupted_ids))
 
+        bos_id = model.tokenizer.bos_token_id
+        if bos_id is None:
+            bos_id = model.tokenizer.eos_token_id
+
         # Pad shorter sequence with pad_token_id
         pad_id = model.tokenizer.pad_token_id
-        clean_ids_padded = clean_ids + [pad_id] * (max_len - len(clean_ids))
-        corrupted_ids_padded = corrupted_ids + [pad_id] * (max_len - len(corrupted_ids))
+        clean_ids_padded = [bos_id] + clean_ids + [pad_id] * (max_len - len(clean_ids))
+        corrupted_ids_padded = [bos_id] + corrupted_ids + [pad_id] * (max_len - len(corrupted_ids))
 
         # Convert to tensors
         clean_tokens = torch.tensor([clean_ids_padded], device=device)
