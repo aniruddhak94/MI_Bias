@@ -12,8 +12,10 @@ def evaluate_baseline(model: HookedTransformer, dataset, metrics: List[Callable[
 
     results = [[] for _ in metrics]
     for sentence, corrupted in tqdm(dataset):
+        # Extract actual string from list format
+        input_str = sentence[0] if isinstance(sentence, list) else sentence
         with torch.inference_mode():
-            logits = model(sentence)
+            logits = model(input_str)
         for j, metric in enumerate(metrics):
             r = metric(sentence,logits).cpu()
             if len(r.size()) == 0:

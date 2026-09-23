@@ -140,8 +140,8 @@ def create_gender_dataset(model, dataset, k=10, output_dir='.', suffix=''):
             FB_dataset.append(dataset[i])
 
     # Save datasets
-    df_mb = pd.DataFrame([(item[0], item[1]) for item in MB_dataset], columns=["clean", "corrupted"])
-    df_fb = pd.DataFrame([(item[0], item[1]) for item in FB_dataset], columns=["clean", "corrupted"])
+    df_mb = pd.DataFrame([(item[0][0], item[1][0]) for item in MB_dataset], columns=["clean", "corrupted"])
+    df_fb = pd.DataFrame([(item[0][0], item[1][0]) for item in FB_dataset], columns=["clean", "corrupted"])
     
     mb_file = os.path.join(output_dir, f"gender_mb_dataset{suffix}.csv")
     fb_file = os.path.join(output_dir, f"gender_fb_dataset{suffix}.csv")
@@ -224,8 +224,8 @@ def create_demographic_dataset(model, dataset, k=10, output_dir='.', suffix=''):
             neg_dataset.append(dataset[i])
 
     # Save datasets
-    df_pos = pd.DataFrame([(item[0], item[1]) for item in pos_dataset], columns=["clean", "corrupted"])
-    df_neg = pd.DataFrame([(item[0], item[1]) for item in neg_dataset], columns=["clean", "corrupted"])
+    df_pos = pd.DataFrame([(item[0][0], item[1][0]) for item in pos_dataset], columns=["clean", "corrupted"])
+    df_neg = pd.DataFrame([(item[0][0], item[1][0]) for item in neg_dataset], columns=["clean", "corrupted"])
     
     pos_file = os.path.join(output_dir, f"demographic_pos_dataset{suffix}.csv")
     neg_file = os.path.join(output_dir, f"demographic_neg_dataset{suffix}.csv")

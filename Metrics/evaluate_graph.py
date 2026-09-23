@@ -72,27 +72,44 @@ def evaluate_graph(model: HookedTransformer, graph: Graph, dataset, metrics: Lis
         metrics_list = False
     results = [[] for _ in metrics]
 
+    # Ensure tokenizer has a pad token (GPT-2 doesn't by default)
+    if model.tokenizer.pad_token_id is None:
+        model.tokenizer.pad_token = model.tokenizer.eos_token
+
     for sentence, corrupted in tqdm(dataset):
-        sens = [sentence, corrupted]
-        sens = [str(s) for s in sens]
-        max_length = max(len(model.tokenizer.tokenize(s, add_special_tokens=False)) for s in sens)
-        padded_sentences = [model.tokenizer.encode(s, padding='max_length', max_length=max_length, return_tensors='pt', add_special_tokens=False) for s in sens]
-        s1 = padded_sentences[0]
-        s2 = padded_sentences[1]
-        clean = model.tokenizer.decode(s1[0])
-        corrupted_dash = model.tokenizer.decode(s2[0])
+        # Extract actual strings from list format
+        clean_str = sentence[0] if isinstance(sentence, list) else sentence
+        corrupted_str = corrupted[0] if isinstance(corrupted, list) else corrupted
+
+        # Tokenize both to get token IDs
+        clean_ids = model.tokenizer.encode(clean_str)
+        corrupted_ids = model.tokenizer.encode(corrupted_str)
+        max_len = max(len(clean_ids), len(corrupted_ids))
+
+        bos_id = model.tokenizer.bos_token_id
+        if bos_id is None:
+            bos_id = model.tokenizer.eos_token_id
+
+        # Pad shorter sequence with pad_token_id and prepend BOS
+        pad_id = model.tokenizer.pad_token_id
+        clean_ids_padded = [bos_id] + clean_ids + [pad_id] * (max_len - len(clean_ids))
+        corrupted_ids_padded = [bos_id] + corrupted_ids + [pad_id] * (max_len - len(corrupted_ids))
+
+        # Convert to tensors
+        clean_tokens = torch.tensor([clean_ids_padded], device='cuda' if torch.cuda.is_available() else 'cpu')
+        corrupted_tokens = torch.tensor([corrupted_ids_padded], device='cuda' if torch.cuda.is_available() else 'cpu')
 
         with torch.inference_mode():
             with model.hooks(corrupted_fwd_hooks):
-                corrupted_logits = model(corrupted_dash)
+                corrupted_logits = model(corrupted_tokens)
 
             with model.hooks(mixed_fwd_hooks + input_construction_hooks):
                 if empty_circuit:
                     # if the circuit is totally empty, so is nodes_in_graph
                     # so we just corrupt everything manually like this
-                    logits = model(corrupted_dash)
+                    logits = model(corrupted_tokens)
                 else:
-                    logits = model(clean)
+                    logits = model(clean_tokens)
         for i, metric in enumerate(metrics):
             r = metric(sentence,logits).cpu()
             if len(r.size()) == 0:

@@ -26,7 +26,8 @@ def prob_diff(model, sentence, logits: torch.Tensor, loss=False, mean=False):
     results = []
     for i, (prob, token_id) in enumerate(zip(probs, next_tokens)):
         token = model.tokenizer.decode(token_id.item())
-        predicted = sentence[0] + " " + token  # Append the predicted token to the current text
+        sentence_str = sentence[0] if isinstance(sentence, list) else sentence
+        predicted = sentence_str + " " + token  # Append the predicted token to the current text
         Senti_Scores = text_to_sentiment(predicted, device=device)
         if Senti_Scores >= 0:
           Positive_Probs = Positive_Probs + prob.sum()
